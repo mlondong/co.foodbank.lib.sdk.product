@@ -6,14 +6,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import co.com.foodbank.product.sdk.exception.SDKProductNotFoundException;
 import co.com.foodbank.product.sdk.exception.SDKProductServiceException;
 import co.com.foodbank.product.sdk.exception.SDKProductServiceIllegalArgumentException;
 import co.com.foodbank.product.sdk.exception.SDKProductServiceNotAvailableException;
@@ -43,23 +47,43 @@ public class SDKProductService implements ISDKProductService {
 
     /**
      * Find a Product.
+     * 
+     * @throws SDKProductNotFoundException
      */
     @Override
-    public ResponseProductData findProductBid(String id)
+    public ResponseProductData findProductById(String id)
             throws SDKProductServiceException,
             SDKProductServiceIllegalArgumentException,
             SDKProductServiceNotAvailableException, JsonMappingException,
-            JsonProcessingException {
+            JsonProcessingException, SDKProductNotFoundException {
 
-        httpHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        HttpEntity<String> entity = new HttpEntity<String>(httpHeaders);
+        try {
+            httpHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            HttpEntity<String> entity = new HttpEntity<String>(httpHeaders);
 
-        String response = restTemplate.exchange(urlSdkFindProduct + id,
-                HttpMethod.GET, entity, String.class).getBody();
+            String response = restTemplate.exchange(urlSdkFindProduct + id,
+                    HttpMethod.GET, entity, String.class).getBody();
 
 
-        return objectMapper.readValue(response,
-                new TypeReference<ResponseProductData>() {});
+            return objectMapper.readValue(response,
+                    new TypeReference<ResponseProductData>() {});
+
+        } catch (HttpClientErrorException i) {
+
+            if (i.getStatusCode() == HttpStatus.BAD_REQUEST) {
+                throw new SDKProductServiceIllegalArgumentException(i);
+            }
+            if (i.getStatusCode() == HttpStatus.NOT_FOUND) {
+                throw new SDKProductNotFoundException(id,
+                        i.getResponseBodyAsString());
+            }
+            throw new SDKProductServiceException(i);
+        } catch (ResourceAccessException i) {
+            throw new SDKProductServiceNotAvailableException(i);
+        } catch (Exception i) {
+            throw new SDKProductServiceException(i);
+        }
+
     }
 
 

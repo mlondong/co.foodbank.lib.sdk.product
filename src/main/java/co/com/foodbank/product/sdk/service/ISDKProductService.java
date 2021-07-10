@@ -2,6 +2,7 @@ package co.com.foodbank.product.sdk.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import co.com.foodbank.product.sdk.exception.SDKProductNotFoundException;
 import co.com.foodbank.product.sdk.exception.SDKProductServiceException;
 import co.com.foodbank.product.sdk.exception.SDKProductServiceIllegalArgumentException;
 import co.com.foodbank.product.sdk.exception.SDKProductServiceNotAvailableException;
@@ -22,10 +23,10 @@ public interface ISDKProductService {
      * @throws SDKProductServiceIllegalArgumentException
      * @throws SDKProductServiceNotAvailableException
      */
-    ResponseProductData findProductBid(String id)
+    ResponseProductData findProductById(String id)
             throws SDKProductServiceException,
             SDKProductServiceIllegalArgumentException,
             SDKProductServiceNotAvailableException, JsonMappingException,
-            JsonProcessingException;
+            JsonProcessingException, SDKProductNotFoundException;
 }
 
