@@ -2,7 +2,6 @@ package co.com.foodbank.product.sdk.service;
 
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -22,6 +21,7 @@ import co.com.foodbank.product.sdk.exception.SDKProductServiceException;
 import co.com.foodbank.product.sdk.exception.SDKProductServiceIllegalArgumentException;
 import co.com.foodbank.product.sdk.exception.SDKProductServiceNotAvailableException;
 import co.com.foodbank.product.sdk.model.ResponseProductData;
+import co.com.foodbank.product.sdk.util.UrlProduct;
 
 /**
  * @author mauricio.londono@gmail.com co.com.foodbank.product.sdk.service
@@ -40,9 +40,8 @@ public class SDKProductService implements ISDKProductService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Value("${urlSdkFindProduct}")
-    private String urlSdkFindProduct;
-
+    @Autowired
+    private UrlProduct urlProduct;
 
 
     /**
@@ -51,7 +50,7 @@ public class SDKProductService implements ISDKProductService {
      * @throws SDKProductNotFoundException
      */
     @Override
-    public ResponseProductData findProductById(String id)
+    public ResponseProductData findProductById(String idProduct)
             throws SDKProductServiceException,
             SDKProductServiceIllegalArgumentException,
             SDKProductServiceNotAvailableException, JsonMappingException,
@@ -61,8 +60,11 @@ public class SDKProductService implements ISDKProductService {
             httpHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             HttpEntity<String> entity = new HttpEntity<String>(httpHeaders);
 
-            String response = restTemplate.exchange(urlSdkFindProduct + id,
-                    HttpMethod.GET, entity, String.class).getBody();
+            String response =
+                    restTemplate
+                            .exchange(urlProduct.tofindProductId(idProduct),
+                                    HttpMethod.GET, entity, String.class)
+                            .getBody();
 
 
             return objectMapper.readValue(response,
@@ -74,7 +76,7 @@ public class SDKProductService implements ISDKProductService {
                 throw new SDKProductServiceIllegalArgumentException(i);
             }
             if (i.getStatusCode() == HttpStatus.NOT_FOUND) {
-                throw new SDKProductNotFoundException(id,
+                throw new SDKProductNotFoundException(idProduct,
                         i.getResponseBodyAsString());
             }
             throw new SDKProductServiceException(i);
